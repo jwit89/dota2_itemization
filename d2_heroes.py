@@ -227,6 +227,8 @@ def hero(hero_id):
         hero_name = "WinterWyvern"
     elif hero_id == 113:
         hero_name = "ArcWarden"
+    elif hero_id == 114:
+        hero_name = "MonkeyKing"
     else:
         hero_name = "N/A"
     return hero_name

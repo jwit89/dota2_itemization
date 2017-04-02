@@ -11,7 +11,7 @@ def split_string(string,n):
 # end split_string
 
 # parse match info for particular hero
-def parse_match(match_line,hero_id):
+def parse_match_items(match_line,hero_id):
     # note: last char on match_line is a comma
     match = match_line.split(',')[:-1]
     [match_id,match_time,radiant_win,hero_str] = match[:4]
@@ -22,12 +22,13 @@ def parse_match(match_line,hero_id):
     if hero_id in hero_ids:
         ind = hero_ids.index(hero_id)
         won = 0
-        if (ind < 5 and radiant_win) or (ind >= 5 and not radiant_win):
+        if (ind < 5 and radiant_win=="True") or \
+           (ind >= 5 and radiant_win=="False"):
             won = 1
         items = player_items[hero_ids.index(hero_id)]
         return (won,items)
     return (-1,[])      
-# end parse_match
+# end parse_match_items
 
 # best items for a given hero, based on win rate
 def best_item(hero,wins,games,num_games,num_wins,comp_wins,comp_games):
@@ -62,6 +63,7 @@ def best_item(hero,wins,games,num_games,num_wins,comp_wins,comp_games):
     ax1.set_title("Win rates for %s with different items" \
                   % d2_heroes.hero(hero))
     plt.savefig("figures/%s_best_items.pdf" % hero)
+    plt.close()
 # end best_item
 
 # pairwise item synergies for a given hero
@@ -104,6 +106,7 @@ def item_synergies(hero,games,num_games,win_rates):
                      transform=ax1text.transAxes)
     ax1.set_title("Item synergies for %s" % d2_heroes.hero(hero))
     plt.savefig("figures/%s_item_synergies.pdf" % hero)
+    plt.close()
 # end item_synergies
 
 # popular item choices for given hero
@@ -146,10 +149,11 @@ def popular_item_choices(hero,games,wins,num_games,num_wins):
     ax2.set_title("Popularity of items on %s across won games" \
               % d2_heroes.hero(hero))
     plt.savefig("figures/%s_item_choices.pdf" % hero)
+    plt.close()
 # end popular_item_choices
 
-# load data from file for given hero
-def analyze_hero(hero,path_to_file):
+# load data from file for given hero and perform analysis of item choices
+def analyze_hero_items(hero,path_to_file):
     # track number of wins and number of games with each item
     # there are 266 unique item_ids in dota 2 (000 is empty)
     # last column will be non-pairwise
@@ -165,7 +169,7 @@ def analyze_hero(hero,path_to_file):
     with open(path_to_file,'r') as f:
         match_num = 0
         for line in f:
-            (won,items) = parse_match(line,hero)
+            (won,items) = parse_match_items(line,hero)
             match_num += 1
             if won < 0: # hero not in game
                 continue
@@ -200,13 +204,17 @@ def analyze_hero(hero,path_to_file):
                              item_win_rates[1:,1:266])
     popular_item_choices(hero,item_games[:,-1],item_wins[:,-1], \
                            num_games,num_wins)
-# end analyze_hero
+# end analyze_hero_items
         
 def main():
-    for hero in range(1,2):
+    for hero in range(114,115):
+        # make sure the hero id is valid
+        if d2_heroes.hero(hero) == "N/A":
+            continue
         print hero
         hero = "%03d" % hero
-        analyze_hero(hero,"data/matches.csv")
+        analyze_hero_items(hero,"data/matches.csv")
+# end main
 
 if __name__ == "__main__":
     main()
