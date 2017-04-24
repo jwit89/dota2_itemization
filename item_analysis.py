@@ -3,7 +3,7 @@ import numpy, d2_items, d2_heroes
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
 
-debug = False # turn this on to reduce the number of matches read in
+debug = True # turn this on to reduce the number of matches read in
 
 # split string into substrings of length n
 def split_string(string,n):
@@ -45,7 +45,7 @@ def best_item(hero,wins,games,num_games,num_wins,comp_wins,comp_games):
     # (defined as being built in fewer than 5% of matches)
     frac_games = [a/(num_games) for a in games]
     win_rates = [a if b>=0.05 else 0 for a,b in zip(win_rates,frac_games)]
-    fig = plt.figure(figsize=(10,6))
+    plt.figure(figsize=(10,6))
     gs = gridspec.GridSpec(1,2,width_ratios=[5,2])
     ax1 = plt.subplot(gs[0])
     ax1.bar(items,win_rates,linewidth=0)
@@ -118,7 +118,7 @@ def popular_item_choices(hero,games,wins,num_games,num_wins):
     wins_freqs = [a/num_wins for a in wins[1:]]
     # make the figure
     # we're going to list the top 10 items to the right of each plot
-    fig = plt.figure(figsize=(10,6))
+    plt.figure(figsize=(10,6))
     gs = gridspec.GridSpec(2,2,width_ratios=[5,2])
     ax1 = plt.subplot(gs[0])
     ax1.bar(items,total_freqs,linewidth=0)

@@ -1,10 +1,8 @@
 #!/usr/bin/env python
-import numpy, d2_heroes, item_analysis
+import numpy, item_analysis
 import matplotlib.pyplot as plt
-from matplotlib import gridspec
 from sklearn.linear_model import LogisticRegression
-from sklearn.cross_validation import train_test_split, cross_val_score
-from sklearn import metrics
+from sklearn.cross_validation import train_test_split
 import random, sys
 
 # parse match info
@@ -173,7 +171,8 @@ def analyze_draft(how="logreg_mono"):
     plt.legend()
     plt.xlabel("Number of Training Matches")
     plt.ylabel("Model Accuracy")
-    plt.title("%s" % how)
+    plt.title("%s (%.1f%% Train, %.1f%% Test)" % \
+                   (how,train_score[-1]*100,test_score[-1]*100))
     plt.savefig("figures/draft_analysis_%s.pdf" % how)
     plt.close()
 # end do_singles
