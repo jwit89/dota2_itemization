@@ -2,7 +2,10 @@
 import numpy, item_analysis
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LogisticRegression
-from sklearn.cross_validation import train_test_split
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import accuracy_score
+from sklearn.neural_network import MLPClassifier
 import random, sys
 
 # parse match info
@@ -143,44 +146,92 @@ def analyze_draft(how="logreg_mono"):
     num = []
     train_score = []
     test_score = []
-    for num_matches in range(100,1001,100) +\
+    for num_matches in range(100,1001,100)+\
                             range(2000,20000,1000)+\
                                  range(20000,100001,10000)+[125000]:
         (wins,heroes) = read_matches("data/matches.csv", \
             num_matches=num_matches)
-        if how == "logreg_mono":
-            # logistic regression with no interactions
+        if "logreg" in how: # logistic regression
+            if how == "logreg_mono":
+                # logistic regression with no interactions
+                features = build_features(heroes)
+            elif how == "logreg_pairs":
+                # logistic regression with top pairwise synergies included
+                synergies = top_pairs(heroes,wins)
+                features = build_features_pairs(heroes,synergies)
+            # split into training and test sets
+            feat_train, feat_test, win_train, win_test = \
+                train_test_split(features,wins,test_size=0.2)
+            # train the model
+            model = LogisticRegression()
+            model = model.fit(feat_train,win_train)
+            # store performance for learning curve
+            print num_matches, len(feat_train)
+            num.append(len(feat_train))
+            train_score.append(model.score(feat_train,win_train))
+            test_score.append(model.score(feat_test,win_test))
+        elif "k-NN" in how: # nearest neighbors
             features = build_features(heroes)
-        elif how == "logreg_pairs":
-            # logistic regression with top pairwise synergies included
-            synergies = top_pairs(heroes,wins)
-            features = build_features_pairs(heroes,synergies)
-        # split into training and test sets
-        feat_train, feat_test, win_train, win_test = \
-            train_test_split(features,wins,test_size=0.5)
-        # train the model
-        model = LogisticRegression()
-        model = model.fit(feat_train,win_train)
-        # store performance for learning curve
-        print num_matches, len(feat_train)
-        num.append(len(feat_train))
-        train_score.append(model.score(feat_train,win_train))
-        test_score.append(model.score(feat_test,win_test))
+             # split into training and test sets
+            feat_train, feat_test, win_train, win_test = \
+                train_test_split(features,wins,test_size=0.2)
+            num_neighbors = 11
+            #num_neighbors = int(how.split("_")[-1])
+            model = KNeighborsClassifier(num_neighbors,weights='uniform',metric=how.split("_")[-1])#,metric=knn_weight,\
+                                         #metric_params={'power':4})
+            # train the model
+            model = model.fit(feat_train,win_train)
+            train_sc = accuracy_score(win_train,model.predict(feat_train))
+            test_sc = accuracy_score(win_test,model.predict(feat_test))
+            print num_matches, len(feat_train), train_sc, test_sc
+            num.append(len(feat_train))
+            train_score.append(train_sc)
+            test_score.append(test_sc)
+        elif "neural" in how: # neural network
+            features = build_features(heroes)
+             # split into training and test sets
+            feat_train, feat_test, win_train, win_test = \
+                train_test_split(features,wins,test_size=0.2)
+            alph = 0.1
+            hidden = 15
+            model = MLPClassifier(alpha=alph,hidden_layer_sizes=(hidden,))
+            # train the model
+            model = model.fit(feat_train,win_train)
+            # score the model
+            train_sc = accuracy_score(win_train,model.predict(feat_train))
+            test_sc = accuracy_score(win_test,model.predict(feat_test))
+            print num_matches, len(feat_train), train_sc, test_sc
+            num.append(len(feat_train))
+            train_score.append(train_sc)
+            test_score.append(test_sc)
     plt.plot(num,train_score,c='r',label='Train')
     plt.plot(num,test_score,c='b',label='Test')
     plt.legend()
     plt.xlabel("Number of Training Matches")
     plt.ylabel("Model Accuracy")
     plt.title("%s (%.1f%% Train, %.1f%% Test)" % \
-                   (how,train_score[-1]*100,test_score[-1]*100))
+              (how,train_score[-1]*100,test_score[-1]*100))
+    plt.show()
     plt.savefig("figures/draft_analysis_%s.pdf" % how)
     plt.close()
-# end do_singles
+# end analyze_draft
+
+# custom weight for k-NN
+def knn_weight(x,y,**kwargs):
+    wt = sum([ int(a) & int(b) for a,b in zip(x,y)])/(0.0 + sum(x)) \
+            ** kwargs['power']
+    return wt
+# end knn_weight
 
 # main function
 def main():
     analyze_draft(how="logreg_mono")
-    analyze_draft(how="logreg_pairs")
+    #analyze_draft(how="logreg_pairs")
+    #for method in ['jaccard','matching','dice','kulsinski','rogerstanimoto','russellrao','sokalmichener','sokalsneath']:
+    #    print method
+    #    analyze_draft(how="k-NN-uni_%s" % method)
+    #analyze_draft(how="neural_%f_%d" % (alpha,hidden))
+    #analyze_draft(how="neural")
 # end main
 
 
